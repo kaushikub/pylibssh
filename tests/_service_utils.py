@@ -15,6 +15,31 @@ if _t.TYPE_CHECKING:
     from pylibsshext.session import Session
 
 
+def make_sshd_command(
+    *,
+    hostkey_path: pathlib.Path,
+    pid_file: pathlib.Path,
+    port: int,
+    extra_opts: _t.Sequence[str] = (),
+) -> list[str]:
+    """Build the command line of a test sshd."""
+    cmd = [
+        '/usr/sbin/sshd',
+        '-D',
+        '-f/dev/null',
+        '-E/dev/stderr',
+        f'-oHostKey={hostkey_path!s}',
+        f'-oPidFile={pid_file!s}',
+        '-oUsePAM=yes',
+        '-oStrictModes=no',
+        '-oPermitRootLogin=yes',
+        f'-oPort={port}',
+        '-oListenAddress=127.0.0.1',
+    ]
+    cmd.extend(extra_opts)
+    return cmd
+
+
 IS_MACOS = sys.platform == 'darwin'
 _MACOS_RECONNECT_ATTEMPT_DELAY = 0.06
 _LINUX_RECONNECT_ATTEMPT_DELAY = 0.002

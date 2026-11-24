@@ -12,6 +12,7 @@ from functools import partial
 import pytest
 from _service_utils import (
     ensure_ssh_session_connected,
+    make_sshd_command,
     wait_for_svc_ready_state,
 )
 
@@ -231,30 +232,24 @@ def sshd_addr(
     # noqa: DAR101
     """
     hostname = '127.0.0.1'
-    cmd = (
-        '/usr/sbin/sshd',
-        '-D',
-        '-f/dev/null',
-        '-E/dev/stderr',
-        '-oLogLevel=DEBUG3',
-        f'-oHostKey={sshd_hostkey_path!s}',
-        '-oPidFile={pid!s}'.format(pid=sshd_path / 'sshd.pid'),
-        # NOTE: 'UsePAM no' is not supported on Fedora.
-        # Ref: https://bugzilla.redhat.com/show_bug.cgi?id=770756#c1
-        '-oUsePAM=yes',
-        '-oPasswordAuthentication=no',
-        '-oChallengeResponseAuthentication=no',
-        '-oGSSAPIAuthentication=no',
-        '-oStrictModes=no',
-        '-oPermitEmptyPasswords=yes',
-        '-oPermitRootLogin=yes',
-        '-oHostbasedAuthentication=no',
-        '-oIgnoreUserKnownHosts=yes',
-        f'-oPort={free_port_num!s}',  # port before addr
-        f'-oListenAddress={hostname!s}',  # addr after port
-        f'-oAuthorizedKeysFile={ssh_authorized_keys_path!s}',
-        '-oAcceptEnv=LANG LC_*',
-        '-oSubsystem=sftp internal-sftp',
+    cmd = make_sshd_command(
+        hostkey_path=sshd_hostkey_path,
+        pid_file=sshd_path / 'sshd.pid',
+        port=free_port_num,
+        extra_opts=(
+            '-oLogLevel=DEBUG3',
+            # NOTE: 'UsePAM no' is not supported on Fedora.
+            # Ref: https://bugzilla.redhat.com/show_bug.cgi?id=770756#c1
+            '-oPasswordAuthentication=no',
+            '-oChallengeResponseAuthentication=no',
+            '-oGSSAPIAuthentication=no',
+            '-oPermitEmptyPasswords=yes',
+            '-oHostbasedAuthentication=no',
+            '-oIgnoreUserKnownHosts=yes',
+            f'-oAuthorizedKeysFile={ssh_authorized_keys_path!s}',
+            '-oAcceptEnv=LANG LC_*',
+            '-oSubsystem=sftp internal-sftp',
+        ),
     )
     proc = subprocess.Popen(cmd)
 
